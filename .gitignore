@@ -44,5 +44,6 @@ lib-cov
 coverage
 
 input.txt
+input_example.txt
 prompt_a.md
 prompt_b.md

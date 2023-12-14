@@ -1,10 +1,4 @@
-// In our parent folder, we have a text file, input.txt, with lines of strings we want to store in an array.
-import {readFileSync} from 'node:fs';
-
-// Read the file and split it into an array of strings
-const input: string[] = readFileSync('src/day1/input.txt', 'utf8').split('\n');
-
-(() => { // Part A
+export const partA = (input: string[]) => { // Part A
 	const calibrationValue = (line: string) => {
 	// Slice the first and last digits from the string and combine them into a number
 	// The first digit might be anywhere in the string, so we need to find it
@@ -20,11 +14,10 @@ const input: string[] = readFileSync('src/day1/input.txt', 'utf8').split('\n');
 		sum += calibrationValue(line);
 	}
 
-	console.log(sum);
-	// Answer: 55029
-})();
+	return sum; // Answer: 55029
+};
 
-(() => { // Part B
+export const partB = (input: string[]) => { // Part B
 	const calibrationValue = (line: string): number => {
 		// Let's find all possible numbers in the string.
 		// For each character, if it's a digit, we'll add it to our ordered list of digits.
@@ -109,6 +102,5 @@ const input: string[] = readFileSync('src/day1/input.txt', 'utf8').split('\n');
 		sum += getValue;
 	}
 
-	console.log(sum);
-	// Answer: 55686
-})();
+	return sum; // Answer: 55686
+};
