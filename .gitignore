@@ -42,3 +42,7 @@ lib-cov
 
 # Coverage directory used by tools like istanbul
 coverage
+
+input.txt
+prompt_a.md
+prompt_b.md
