@@ -1,59 +1,61 @@
-import {readFileSync} from 'node:fs';
-
-const input: string[] = readFileSync('src/day2/input.txt', 'utf8').split('\n');
 type Pull = {
 	red: number;
 	green: number;
 	blue: number;
 };
-const inputDict: Record<number, Pull[]> = {};
-for (const line of input) {
-	let [gameNumber, pullString] = line.split(': ');
-	gameNumber = gameNumber.split(' ')[1];
-	const pulls: Pull[] = [];
-	const pullArray = pullString.split('; ');
-	for (let i = 0; i < pullArray.length; i++) {
-		pullArray[i] = pullArray[i].trim();
-	}
-
-	for (const pull of pullArray) {
-		const pullDict: Pull = {
-			red: 0,
-			green: 0,
-			blue: 0,
-		};
-		const pullSplit = pull.split(', ');
-		for (const cube of pullSplit) {
-			const [count, color] = cube.split(' ');
-			switch (color) {
-				case 'red': {
-					pullDict.red = Number(count);
-
-					break;
-				}
-
-				case 'green': {
-					pullDict.green = Number(count);
-
-					break;
-				}
-
-				case 'blue': {
-					pullDict.blue = Number(count);
-
-					break;
-				}
-            // No default
-			}
+const transformInput = (input: string[]): Record<number, Pull[]> => {
+	const inputDict: Record<number, Pull[]> = {};
+	for (const line of input) {
+		let [gameNumber, pullString] = line.split(': ');
+		gameNumber = gameNumber.split(' ')[1];
+		const pulls: Pull[] = [];
+		const pullArray = pullString.split('; ');
+		for (let i = 0; i < pullArray.length; i++) {
+			pullArray[i] = pullArray[i].trim();
 		}
 
-		pulls.push(pullDict);
+		for (const pull of pullArray) {
+			const pullDict: Pull = {
+				red: 0,
+				green: 0,
+				blue: 0,
+			};
+			const pullSplit = pull.split(', ');
+			for (const cube of pullSplit) {
+				const [count, color] = cube.split(' ');
+				switch (color) {
+					case 'red': {
+						pullDict.red = Number(count);
+
+						break;
+					}
+
+					case 'green': {
+						pullDict.green = Number(count);
+
+						break;
+					}
+
+					case 'blue': {
+						pullDict.blue = Number(count);
+
+						break;
+					}
+				// No default
+				}
+			}
+
+			pulls.push(pullDict);
+		}
+
+		inputDict[Number(gameNumber)] = pulls;
 	}
 
-	inputDict[Number(gameNumber)] = pulls;
-}
+	return inputDict;
+};
 
-(() => { // Part A
+export const partA = (input: string[]): number => { // Part A
+	const inputDict = transformInput(input);
 	const redCubes = 12;
 	const greenCubes = 13;
 	const blueCubes = 14;
@@ -75,11 +77,11 @@ for (const line of input) {
 	}
 
 	const sum = possibleGames.reduce((a, b) => a + b, 0);
-	console.log(sum);
-	// Answer: 2685
-})();
+	return sum; // Answer: 2685
+};
 
-(() => { // Part B
+export const partB = (input: string[]): number => { // Part B
+	const inputDict = transformInput(input);
 	let sumOfAllPowers = 0;
 	const arrayOfPowers: number[] = [];
 	const arrayOfGames: Pull[][] = [];
@@ -119,6 +121,5 @@ for (const line of input) {
 		sumOfAllPowers += power;
 	}
 
-	console.log(sumOfAllPowers);
-	// Answer: 83707
-})();
+	return sumOfAllPowers; // Answer: 83707
+};

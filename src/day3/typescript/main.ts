@@ -1,8 +1,4 @@
-import {readFileSync} from 'node:fs';
-
-const input: string[] = readFileSync('src/day3/input.txt', 'utf8').split('\n');
-
-(() => { // Part A
+export const partA = (input: string[]): number => { // Part A
 	// Create a virtual grid, x:140 and y will expand as needed.
 	// We'll read each line of input for numbers and symbols, mapping their coordinates to the grid.
 	const grid: string[][] = [];
@@ -34,9 +30,10 @@ const input: string[] = readFileSync('src/day3/input.txt', 'utf8').split('\n');
 		const coloredString = coloredStringArray.join('');
 		console.log(coloredString);
 	}
-	// Answer:
-})();
 
-(() => { // Part B
-	// Answer:
-})();
+	return 0; // Answer:
+};
+
+export const partB = (input: string[]): number => {
+	return 0; // Answer:
+};
