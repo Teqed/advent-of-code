@@ -12,7 +12,6 @@ export const partA = (input: string[]) => {
 };
 
 export const partB = (input: string[]) => {
-	// Let's create a dictionary of matches, so we can easily find it on repeated cards.
 	type Card = {
 		cardNumber: number;
 		winningNumbers: number[];
