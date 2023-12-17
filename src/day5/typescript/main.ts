@@ -135,7 +135,10 @@ export const partA = (input: string[]) => {
 };
 
 export const partB = (input: string[]) => {
-	const seeds: number[] = [];
+    // Like partB, but let's handle the seeds as ranges instead of individual numbers.
+    // This way, we can handle many number of consecutive seeds.
+    // When a range of seeds overlaps with a map, we might need to split the range into two or more ranges.
+    const seedRanges: Array<[number, number]> = [];
     type AlmanacMap = {
         destinationRangeStart: number;
         sourceRangeStart: number;
@@ -183,15 +186,11 @@ export const partB = (input: string[]) => {
             }
 
             const seedsString = seedsLine.replace('seeds: ', '');
-            // Seeds: 79 14 55 13
-            // This line describes two ranges of seed numbers to be planted in the garden. The first range starts with seed number 79 and contains 14 values: 79, 80, ..., 91, 92. The second range starts with seed number 55 and contains 13 values: 55, 56, ..., 66, 67.
             const seedsArray = seedsString.split(' ');
             for (let i = 0; i < seedsArray.length; i += 2) {
-                const seed = Number.parseInt(seedsArray[i], 10);
-                const seedRange = Number.parseInt(seedsArray[i + 1], 10) - 1;
-                for (let j = 0; j < seedRange; j++) {
-                    seeds.push(seed + j);
-                }
+                const seedMin = Number.parseInt(seedsArray[i], 10);
+                const seedMax = (Number.parseInt(seedsArray[i], 10) + Number.parseInt(seedsArray[i + 1], 10));
+                seedRanges.push([seedMin, seedMax]);
             }
         };
 
@@ -241,34 +240,77 @@ export const partB = (input: string[]) => {
 
     parseInput(input);
 
-    const processBetterMaps = (input: number[], mapsDictionary: Record<number, BetterAlmanacMap[]>): number[] => {
-        const processMap = (input: number, map: BetterAlmanacMap): number | undefined => {
-            if (input >= map.sourceRangeStart && input <= map.sourceRangeEnd) {
-                const output = input + map.offset;
-                return output;
+    const processBetterMaps = (input: Array<[number, number]>, mapsDictionary: Record<number, BetterAlmanacMap[]>): Array<[number, number]> => {
+        const output: Array<[number, number]> = [];
+        const processMap = (input: Array<[number, number]>, map: BetterAlmanacMap): Array<[number, number]> => {
+            const outputSeed: Array<[number, number]> = [];
+            for (const seedRange of input) {
+                const [seedRangeMin, seedRangeMax] = seedRange;
+                console.log(`Processing seed range ${seedRangeMin}-${seedRangeMax}`);
+                if (seedRangeMin >= map.sourceRangeStart && seedRangeMin <= map.sourceRangeEnd) {
+                    console.log(`Adding seed range ${seedRangeMin}-${seedRangeMax} to output.`);
+                    const outputMin = seedRangeMin + map.offset;
+                    const outputMax = seedRangeMax + map.offset;
+                    outputSeed.push([outputMin, outputMax]);
+                // If the seed range only partially overlaps with the map, we need to split the seed range into two or more ranges.
+                } else if ((seedRangeMin <= map.sourceRangeEnd && seedRangeMax >= map.sourceRangeStart) || (seedRangeMin >= map.sourceRangeEnd && seedRangeMax <= map.sourceRangeStart)) {
+                    // Find where the seed range intersects with the map, and split the overlap into a new range.
+                    console.log(`Splitting seed range ${seedRangeMin}-${seedRangeMax}`);
+                    const newRange: [number, number] = [seedRangeMin, seedRangeMax];
+                    const oldRange: [number, number] = [seedRangeMin, seedRangeMax];
+                    if (seedRangeMin < map.sourceRangeStart) {
+                        console.log(`map.sourceRangeStart: ${map.sourceRangeStart}`);
+                        newRange[0] = map.sourceRangeStart;
+                        oldRange[1] = map.sourceRangeStart - 1;
+                        console.log(`Setting new range to ${newRange[0]}-${newRange[1]}`);
+                        console.log(`Setting old range to ${oldRange[0]}-${oldRange[1]}`);
+                    }
+
+                    if (seedRangeMax > map.sourceRangeEnd) {
+                        console.log(`map.sourceRangeEnd: ${map.sourceRangeEnd}`);
+                        newRange[1] = map.sourceRangeEnd;
+                        oldRange[0] = map.sourceRangeEnd + 1;
+                        console.log(`Setting new range to ${newRange[0]}-${newRange[1]}`);
+                        console.log(`Setting old range to ${oldRange[0]}-${oldRange[1]}`);
+                    }
+
+                    // Process the new range.
+                    const outputMin = newRange[0] + map.offset;
+                    const outputMax = newRange[1] + map.offset;
+                    console.log(`Transforming seed range ${newRange[0]}-${newRange[1]} into ${outputMin}-${outputMax}`);
+                    console.log(`Splitting seed range ${seedRangeMin}-${seedRangeMax} into ${newRange[0]}-${newRange[1]} and ${oldRange[0]}-${oldRange[1]}`);
+                    outputSeed.push([outputMin, outputMax], [oldRange[0], oldRange[1]]);
+                }
             }
 
-            return undefined;
+            const outputSeedString = outputSeed.map(seed => seed.join('-')).join(', ');
+            console.log(`Returning output seed ${outputSeedString}`);
+            return outputSeed;
         };
 
         for (let i = 0; i < Object.keys(mapsDictionary).length; i++) {
-            for (let j = 0; j < input.length; j++) {
-                for (const map of mapsDictionary[i]) {
-                    const mapping = processMap(input[j], map);
-                    if (mapping !== undefined) {
-                        input[j] = mapping;
-                        break;
-                    }
+            for (const map of mapsDictionary[i]) {
+                for (const seedRange of input) {
+                    console.log(`Processing seed range ${seedRange[0]}-${seedRange[1]}`);
+                    output.push(...processMap([seedRange], map));
                 }
             }
         }
 
-        return input;
+        return output;
     };
 
-    const output = processBetterMaps(seeds, mapDictionary);
+    const output = processBetterMaps(seedRanges, mapDictionary);
 
-    const lowestOutput = Math.min(...output);
+    let lowestOutput;
+    for (const seedRange of output) {
+        const seedString = seedRange.join('-');
+        console.log(`Seed range: ${seedString}`);
+        if (lowestOutput === undefined || seedRange[0] < lowestOutput) {
+            console.log(`Setting lowest output to ${seedRange[0]}`);
+            lowestOutput = seedRange[0];
+        }
+    }
 
     return lowestOutput;
 };

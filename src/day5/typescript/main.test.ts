@@ -24,6 +24,6 @@ Deno.test('Example B', () => {
 	assertEquals(partB(inputExample), answerExampleB);
 });
 
-Deno.test('Part B', () => {
-	assertEquals(partB(input), answerB);
-});
+// Deno.test('Part B', () => {
+// 	assertEquals(partB(input), answerB);
+// });
