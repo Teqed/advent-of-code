@@ -1,34 +1,41 @@
 /* eslint-disable @typescript-eslint/indent */
+
+type SeedRange = {
+    startInclusive: number;
+    endExclusive: number;
+};
+
+type AlmanacMap = {
+    destinationRangeStart: number;
+    sourceRangeStart: number;
+    rangeLength: number;
+};
+enum AlmanacMapKeys {
+    SEED_TO_SOIL,
+    SOIL_TO_FERTILIZER,
+    FERTILIZER_TO_WATER,
+    WATER_TO_LIGHT,
+    LIGHT_TO_TEMPERATURE,
+    TEMPERATURE_TO_HUMIDITY,
+    HUMITIDY_TO_LOCATION,
+}
+enum AlmanacMapStrings {
+    'seed-to-soil',
+    'soil-to-fertilizer',
+    'fertilizer-to-water',
+    'water-to-light',
+    'light-to-temperature',
+    'temperature-to-humidity',
+    'humidity-to-location',
+}
+
 export const partA = (input: string[]) => {
 	const seeds: number[] = [];
-    type AlmanacMap = {
-        destinationRangeStart: number;
-        sourceRangeStart: number;
-        rangeLength: number;
-    };
     type BetterAlmanacMap = {
         sourceRangeStart: number;
         sourceRangeEnd: number;
         offset: number;
     };
-    enum AlmanacMapKeys {
-        SEED_TO_SOIL,
-        SOIL_TO_FERTILIZER,
-        FERTILIZER_TO_WATER,
-        WATER_TO_LIGHT,
-        LIGHT_TO_TEMPERATURE,
-        TEMPERATURE_TO_HUMIDITY,
-        HUMITIDY_TO_LOCATION,
-    }
-    enum AlmanacMapStrings {
-        'seed-to-soil',
-        'soil-to-fertilizer',
-        'fertilizer-to-water',
-        'water-to-light',
-        'light-to-temperature',
-        'temperature-to-humidity',
-        'humidity-to-location',
-    }
 
     const mapDictionary: Record<AlmanacMapKeys, BetterAlmanacMap[]> = {
         [AlmanacMapKeys.SEED_TO_SOIL]: [],
@@ -135,40 +142,63 @@ export const partA = (input: string[]) => {
 };
 
 export const partB = (input: string[]) => {
-    // Like partB, but let's handle the seeds as ranges instead of individual numbers.
-    // This way, we can handle many number of consecutive seeds.
-    // When a range of seeds overlaps with a map, we might need to split the range into two or more ranges.
-    const seedRanges: Array<[number, number]> = [];
-    type AlmanacMap = {
-        destinationRangeStart: number;
-        sourceRangeStart: number;
-        rangeLength: number;
-    };
-    type BetterAlmanacMap = {
-        sourceRangeStart: number;
-        sourceRangeEnd: number;
-        offset: number;
-    };
-    enum AlmanacMapKeys {
-        SEED_TO_SOIL,
-        SOIL_TO_FERTILIZER,
-        FERTILIZER_TO_WATER,
-        WATER_TO_LIGHT,
-        LIGHT_TO_TEMPERATURE,
-        TEMPERATURE_TO_HUMIDITY,
-        HUMITIDY_TO_LOCATION,
-    }
-    enum AlmanacMapStrings {
-        'seed-to-soil',
-        'soil-to-fertilizer',
-        'fertilizer-to-water',
-        'water-to-light',
-        'light-to-temperature',
-        'temperature-to-humidity',
-        'humidity-to-location',
-    }
+    const parseSeeds = (input: string[]): SeedRange[] => {
+        const seedsOutput: SeedRange[] = [];
+        const seedsLine = input.find(line => line.startsWith('seeds: '));
+        if (!seedsLine) {
+            throw new Error('No seeds line found in input.');
+        }
 
-    const mapDictionary: Record<AlmanacMapKeys, BetterAlmanacMap[]> = {
+        const seedsString = seedsLine.replace('seeds: ', '');
+        const seedsArray = seedsString.split(' ');
+        for (let i = 0; i < seedsArray.length; i += 2) {
+            const start = Number.parseInt(seedsArray[i], 10);
+            const range = Number.parseInt(seedsArray[i + 1], 10);
+            const seedRange: SeedRange = {
+                startInclusive: start,
+                endExclusive: start + range,
+            };
+            seedsOutput.push(seedRange);
+            console.log(`Adding seed ${seedRange.startInclusive} -> ${seedRange.endExclusive}`);
+        }
+
+        return seedsOutput;
+    };
+
+    const seeds: SeedRange[] = parseSeeds(input);
+
+    const parseMap = (input: string[], mapKey: AlmanacMapKeys): AlmanacMap[] => {
+        const _mapDictionary: AlmanacMap[] = [];
+        const mapKeyName = AlmanacMapStrings[mapKey];
+        const mapLine = input.find(line => line.startsWith(`${mapKeyName}`));
+        if (!mapLine) {
+            throw new Error(`No ${mapKeyName} map line found in input.`);
+        }
+
+        console.log(`Found map line ${mapLine}`);
+
+        const mapLines = [];
+        let mapLineIndex = (input.indexOf(mapLine) + 1);
+        while (input[mapLineIndex] !== '' && input[mapLineIndex] !== undefined && input[mapLineIndex].length > 1) {
+            mapLines.push(input[mapLineIndex]);
+            mapLineIndex++;
+        }
+
+        for (const mapLine of mapLines) {
+            const mapLineArray = mapLine.split(' ');
+            const map = {
+                destinationRangeStart: Number.parseInt(mapLineArray[0], 10),
+                sourceRangeStart: Number.parseInt(mapLineArray[1], 10),
+                rangeLength: Number.parseInt(mapLineArray[2], 10),
+            };
+
+            _mapDictionary.push(map);
+        }
+
+        return _mapDictionary;
+    };
+
+    const mapDictionary: Record<AlmanacMapKeys, AlmanacMap[]> = {
         [AlmanacMapKeys.SEED_TO_SOIL]: [],
         [AlmanacMapKeys.SOIL_TO_FERTILIZER]: [],
         [AlmanacMapKeys.FERTILIZER_TO_WATER]: [],
@@ -178,139 +208,111 @@ export const partB = (input: string[]) => {
         [AlmanacMapKeys.HUMITIDY_TO_LOCATION]: [],
     };
 
-    const parseInput = (input: string[]): void => {
-        const parseSeeds = (input: string[]): void => {
-            const seedsLine = input.find(line => line.startsWith('seeds: '));
-            if (!seedsLine) {
-                throw new Error('No seeds line found in input.');
-            }
+    mapDictionary[AlmanacMapKeys.SEED_TO_SOIL] = parseMap(input, AlmanacMapKeys.SEED_TO_SOIL);
+    mapDictionary[AlmanacMapKeys.SOIL_TO_FERTILIZER] = parseMap(input, AlmanacMapKeys.SOIL_TO_FERTILIZER);
+    mapDictionary[AlmanacMapKeys.FERTILIZER_TO_WATER] = parseMap(input, AlmanacMapKeys.FERTILIZER_TO_WATER);
+    mapDictionary[AlmanacMapKeys.WATER_TO_LIGHT] = parseMap(input, AlmanacMapKeys.WATER_TO_LIGHT);
+    mapDictionary[AlmanacMapKeys.LIGHT_TO_TEMPERATURE] = parseMap(input, AlmanacMapKeys.LIGHT_TO_TEMPERATURE);
+    mapDictionary[AlmanacMapKeys.TEMPERATURE_TO_HUMIDITY] = parseMap(input, AlmanacMapKeys.TEMPERATURE_TO_HUMIDITY);
+    mapDictionary[AlmanacMapKeys.HUMITIDY_TO_LOCATION] = parseMap(input, AlmanacMapKeys.HUMITIDY_TO_LOCATION);
 
-            const seedsString = seedsLine.replace('seeds: ', '');
-            const seedsArray = seedsString.split(' ');
-            for (let i = 0; i < seedsArray.length; i += 2) {
-                const seedMin = Number.parseInt(seedsArray[i], 10);
-                const seedMax = (Number.parseInt(seedsArray[i], 10) + Number.parseInt(seedsArray[i + 1], 10));
-                seedRanges.push([seedMin, seedMax]);
-            }
-        };
+    const processMap = (input: SeedRange[], map: AlmanacMap): {processedSeeds: SeedRange[]; unprocessedSeeds: SeedRange[]} => {
+        const unprocessedSeeds: SeedRange[] = [];
+        const processedSeeds: SeedRange[] = [];
+        const offset = map.destinationRangeStart - map.sourceRangeStart;
+        const sourceRangeEndExclusive = map.sourceRangeStart + map.rangeLength + 1;
 
-        const parseMap = (input: string[], mapKey: AlmanacMapKeys): void => {
-            const mapKeyName = AlmanacMapStrings[mapKey];
-            const mapLine = input.find(line => line.startsWith(`${mapKeyName}`));
-            if (!mapLine) {
-                throw new Error(`No ${mapKeyName} map line found in input.`);
-            }
-
-            console.log(`Found map line ${mapLine}`);
-
-            const mapLines = [];
-            let mapLineIndex = (input.indexOf(mapLine) + 1);
-            while (input[mapLineIndex] !== '' && input[mapLineIndex] !== undefined && input[mapLineIndex].length > 1) {
-                console.log(`Adding map line ${input[mapLineIndex]}`);
-                mapLines.push(input[mapLineIndex]);
-                mapLineIndex++;
-            }
-
-            for (const mapLine of mapLines) {
-                const mapLineArray = mapLine.split(' ');
-                const map = {
-                    destinationRangeStart: Number.parseInt(mapLineArray[0], 10),
-                    sourceRangeStart: Number.parseInt(mapLineArray[1], 10),
-                    rangeLength: Number.parseInt(mapLineArray[2], 10),
+        for (const seedRange of input) {
+            if (seedRange.startInclusive >= map.sourceRangeStart && (seedRange.endExclusive) <= (sourceRangeEndExclusive)) {
+                console.log(`Seed ${seedRange.startInclusive} - ${seedRange.endExclusive} is within range of map ${map.sourceRangeStart} - ${sourceRangeEndExclusive}`);
+                const outputSeedRange: SeedRange = {
+                    startInclusive: seedRange.startInclusive + offset,
+                    endExclusive: seedRange.endExclusive + offset,
                 };
-                const betterMap = {
-                    sourceRangeStart: map.sourceRangeStart,
-                    sourceRangeEnd: map.sourceRangeStart + map.rangeLength,
-                    offset: map.destinationRangeStart - map.sourceRangeStart,
+                processedSeeds.push(outputSeedRange);
+            } else if (seedRange.startInclusive < map.sourceRangeStart && seedRange.endExclusive > map.sourceRangeStart) {
+                console.log(`Seed ${seedRange.startInclusive} - ${seedRange.endExclusive} starts before range of map ${map.sourceRangeStart} - ${sourceRangeEndExclusive}`);
+                const unprocessedSeedRange: SeedRange = {
+                    startInclusive: seedRange.startInclusive,
+                    endExclusive: map.sourceRangeStart,
                 };
-
-                mapDictionary[mapKey].push(betterMap);
-            }
-        };
-
-        parseSeeds(input);
-        parseMap(input, AlmanacMapKeys.SEED_TO_SOIL);
-        parseMap(input, AlmanacMapKeys.SOIL_TO_FERTILIZER);
-        parseMap(input, AlmanacMapKeys.FERTILIZER_TO_WATER);
-        parseMap(input, AlmanacMapKeys.WATER_TO_LIGHT);
-        parseMap(input, AlmanacMapKeys.LIGHT_TO_TEMPERATURE);
-        parseMap(input, AlmanacMapKeys.TEMPERATURE_TO_HUMIDITY);
-        parseMap(input, AlmanacMapKeys.HUMITIDY_TO_LOCATION);
-    };
-
-    parseInput(input);
-
-    const processBetterMaps = (input: Array<[number, number]>, mapsDictionary: Record<number, BetterAlmanacMap[]>): Array<[number, number]> => {
-        const output: Array<[number, number]> = [];
-        const processMap = (input: Array<[number, number]>, map: BetterAlmanacMap): Array<[number, number]> => {
-            const outputSeed: Array<[number, number]> = [];
-            for (const seedRange of input) {
-                const [seedRangeMin, seedRangeMax] = seedRange;
-                console.log(`Processing seed range ${seedRangeMin}-${seedRangeMax}`);
-                if (seedRangeMin >= map.sourceRangeStart && seedRangeMin <= map.sourceRangeEnd) {
-                    console.log(`Adding seed range ${seedRangeMin}-${seedRangeMax} to output.`);
-                    const outputMin = seedRangeMin + map.offset;
-                    const outputMax = seedRangeMax + map.offset;
-                    outputSeed.push([outputMin, outputMax]);
-                // If the seed range only partially overlaps with the map, we need to split the seed range into two or more ranges.
-                } else if ((seedRangeMin <= map.sourceRangeEnd && seedRangeMax >= map.sourceRangeStart) || (seedRangeMin >= map.sourceRangeEnd && seedRangeMax <= map.sourceRangeStart)) {
-                    // Find where the seed range intersects with the map, and split the overlap into a new range.
-                    console.log(`Splitting seed range ${seedRangeMin}-${seedRangeMax}`);
-                    const newRange: [number, number] = [seedRangeMin, seedRangeMax];
-                    const oldRange: [number, number] = [seedRangeMin, seedRangeMax];
-                    if (seedRangeMin < map.sourceRangeStart) {
-                        console.log(`map.sourceRangeStart: ${map.sourceRangeStart}`);
-                        newRange[0] = map.sourceRangeStart;
-                        oldRange[1] = map.sourceRangeStart - 1;
-                        console.log(`Setting new range to ${newRange[0]}-${newRange[1]}`);
-                        console.log(`Setting old range to ${oldRange[0]}-${oldRange[1]}`);
-                    }
-
-                    if (seedRangeMax > map.sourceRangeEnd) {
-                        console.log(`map.sourceRangeEnd: ${map.sourceRangeEnd}`);
-                        newRange[1] = map.sourceRangeEnd;
-                        oldRange[0] = map.sourceRangeEnd + 1;
-                        console.log(`Setting new range to ${newRange[0]}-${newRange[1]}`);
-                        console.log(`Setting old range to ${oldRange[0]}-${oldRange[1]}`);
-                    }
-
-                    // Process the new range.
-                    const outputMin = newRange[0] + map.offset;
-                    const outputMax = newRange[1] + map.offset;
-                    console.log(`Transforming seed range ${newRange[0]}-${newRange[1]} into ${outputMin}-${outputMax}`);
-                    console.log(`Splitting seed range ${seedRangeMin}-${seedRangeMax} into ${newRange[0]}-${newRange[1]} and ${oldRange[0]}-${oldRange[1]}`);
-                    outputSeed.push([outputMin, outputMax], [oldRange[0], oldRange[1]]);
-                }
-            }
-
-            const outputSeedString = outputSeed.map(seed => seed.join('-')).join(', ');
-            console.log(`Returning output seed ${outputSeedString}`);
-            return outputSeed;
-        };
-
-        for (let i = 0; i < Object.keys(mapsDictionary).length; i++) {
-            for (const map of mapsDictionary[i]) {
-                for (const seedRange of input) {
-                    console.log(`Processing seed range ${seedRange[0]}-${seedRange[1]}`);
-                    output.push(...processMap([seedRange], map));
-                }
+                unprocessedSeeds.push(unprocessedSeedRange);
+                const outputSeedRange: SeedRange = {
+                    startInclusive: map.sourceRangeStart + offset,
+                    endExclusive: seedRange.endExclusive + offset,
+                };
+                processedSeeds.push(outputSeedRange);
+            } else if (seedRange.startInclusive < (sourceRangeEndExclusive) && seedRange.endExclusive > (sourceRangeEndExclusive)) {
+                console.log(`Seed [${seedRange.startInclusive}, ${seedRange.endExclusive}) ends after range of map [${map.sourceRangeStart}, ${sourceRangeEndExclusive})`);
+                const outputSeedRange: SeedRange = {
+                    startInclusive: seedRange.startInclusive + offset,
+                    endExclusive: seedRange.startInclusive + map.rangeLength + offset,
+                };
+                console.log(`Output seed [${outputSeedRange.startInclusive}, ${outputSeedRange.endExclusive})`);
+                processedSeeds.push(outputSeedRange);
+                const unprocessedSeedRange: SeedRange = {
+                    startInclusive: seedRange.startInclusive + map.rangeLength,
+                    endExclusive: seedRange.endExclusive,
+                };
+                console.log(`Unprocessed seed [${unprocessedSeedRange.startInclusive}, ${unprocessedSeedRange.endExclusive})`);
+                unprocessedSeeds.push(unprocessedSeedRange);
+            } else if (seedRange.startInclusive < map.sourceRangeStart && seedRange.endExclusive > (sourceRangeEndExclusive)) {
+                console.log(`Seed ${seedRange.startInclusive} - ${seedRange.endExclusive} starts before and ends after range of map ${map.sourceRangeStart} - ${sourceRangeEndExclusive}`);
+                const unprocessedSeedRange: SeedRange = {
+                    startInclusive: seedRange.startInclusive,
+                    endExclusive: map.sourceRangeStart,
+                };
+                unprocessedSeeds.push(unprocessedSeedRange);
+                const outputSeedRange: SeedRange = {
+                    startInclusive: map.sourceRangeStart + offset,
+                    endExclusive: map.sourceRangeStart + map.rangeLength + offset,
+                };
+                processedSeeds.push(outputSeedRange);
+                const unprocessedSeedRange2: SeedRange = {
+                    startInclusive: map.sourceRangeStart + map.rangeLength,
+                    endExclusive: seedRange.endExclusive,
+                };
+                unprocessedSeeds.push(unprocessedSeedRange2);
+            } else {
+                unprocessedSeeds.push(seedRange);
             }
         }
 
-        return output;
+        return {processedSeeds, unprocessedSeeds};
     };
 
-    const output = processBetterMaps(seedRanges, mapDictionary);
+    const processMapLayer = (inputSeeds: SeedRange[], mapLayer: AlmanacMap[]): SeedRange[] => {
+        let unprocessedSeeds: SeedRange[] = inputSeeds;
+        let processedSeeds: SeedRange[] = [];
 
-    let lowestOutput;
-    for (const seedRange of output) {
-        const seedString = seedRange.join('-');
-        console.log(`Seed range: ${seedString}`);
-        if (lowestOutput === undefined || seedRange[0] < lowestOutput) {
-            console.log(`Setting lowest output to ${seedRange[0]}`);
-            lowestOutput = seedRange[0];
+        for (const map of mapLayer) {
+            const {processedSeeds: _processedSeeds, unprocessedSeeds: _unprocessedSeeds} = processMap(unprocessedSeeds, map);
+            processedSeeds = [...processedSeeds, ..._processedSeeds];
+            unprocessedSeeds = _unprocessedSeeds;
         }
-    }
 
+        return [...processedSeeds, ...unprocessedSeeds];
+    };
+
+    const processMapLayers = (input: SeedRange[], mapLayers: Record<AlmanacMapKeys, AlmanacMap[]>): SeedRange[] => {
+        let seedContents: SeedRange[] = input;
+
+        for (const mapLayerKey of Object.keys(mapLayers)) {
+            const mapLayerKeyNumber: AlmanacMapKeys = Number.parseInt(mapLayerKey, 10);
+            console.log(`Processing map layer ${mapLayerKeyNumber}, known as ${AlmanacMapStrings[mapLayerKeyNumber]}`);
+
+            const mapLayer = mapLayers[mapLayerKeyNumber];
+
+            seedContents = processMapLayer(seedContents.flat(), mapLayer);
+        }
+
+        return seedContents;
+    };
+
+    const output = processMapLayers(seeds, mapDictionary);
+
+    const lowestOutput = Math.min(...output.flat().map(seedRange => seedRange.startInclusive));
+
+    console.log(`Lowest output is ${lowestOutput}`);
     return lowestOutput;
 };
