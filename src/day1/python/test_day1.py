@@ -1,4 +1,4 @@
-from main import partA, partB
+from day1 import partA, partB
 
 day = 1
 answerExample = 142
