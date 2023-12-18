@@ -1,10 +1,10 @@
-def partA(input):
-    class Round:
-        def __init__(self, red, green, blue):
-            self.red = red
-            self.green = green
-            self.blue = blue
+class Round:
+    def __init__(self, red, green, blue):
+        self.red = red
+        self.green = green
+        self.blue = blue
 
+def partA(input):
     class Game:
         def __init__(self, id, rounds):
             self.id = id
@@ -52,11 +52,6 @@ def partA(input):
     return sum
 
 def partB(input):
-    class Round:
-        def __init__(self, red, green, blue):
-            self.red = red
-            self.green = green
-            self.blue = blue
 
     class Game:
         def __init__(self, id, rounds):
