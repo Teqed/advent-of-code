@@ -76,4 +76,5 @@ export const partB = (input: string[]) => {
 
     const outcomesMultiplied = winningOutcomeArray.reduce((a, b) => a * b, 1);
     return outcomesMultiplied;
+    // TODO: Quadratic implementation
 };
