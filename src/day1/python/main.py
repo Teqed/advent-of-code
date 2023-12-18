@@ -2,7 +2,6 @@ def partA(input):
     input = input.split("\n")
     sum = 0
     for i in input:
-        print(i)
         digits = (int(c) for c in i if c.isdigit())
         first_digit = next(digits)
         last_digit = first_digit
