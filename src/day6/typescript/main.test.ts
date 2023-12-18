@@ -6,7 +6,7 @@ import {partA, partB} from './main.ts'; // eslint-disable-line n/file-extension-
 const day = 6;
 const answerExample = 288;
 const answerA = 449_550;
-const answerB = 0;
+const answerB = 28_360_140;
 const answerExampleB = 71_503;
 const input: string[] = readFileSync(`src/day${day}/input.txt`, 'utf8').split('\n');
 const inputExample: string[] = readFileSync(`src/day${day}/input_example.txt`, 'utf8').split('\n');
