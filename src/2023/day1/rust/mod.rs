@@ -1,8 +1,11 @@
 pub fn part_a(input: &str) -> i32 {
     let mut sum = 0;
     for line in input.lines() {
-        let mut digits = line.chars().filter(|c| c.is_ascii_digit()).map(|c| c.to_digit(10).unwrap());
-        let first_digit = digits.next().unwrap();
+        let mut digits = line
+            .chars()
+            .filter(|c| c.is_ascii_digit())
+            .map(|c| c.to_digit(10).expect("should be a number"));
+        let first_digit = digits.next().expect("should be a number");
         let last_digit = digits.last().unwrap_or(first_digit);
         let combined = first_digit * 10 + last_digit;
         sum += combined as i32;
@@ -12,12 +15,14 @@ pub fn part_a(input: &str) -> i32 {
 
 pub fn part_b(input: &str) -> i32 {
     let mut sum = 0;
-    let digit_strings = ["one", "two", "three", "four", "five", "six", "seven", "eight", "nine"];
+    let digit_strings = [
+        "one", "two", "three", "four", "five", "six", "seven", "eight", "nine",
+    ];
     for line in input.lines() {
         let mut digit_array = Vec::new();
         for (current_index, c) in line.chars().enumerate() {
             if c.is_ascii_digit() {
-                digit_array.push(c.to_digit(10).unwrap());
+                digit_array.push(c.to_digit(10).expect("should be a number"));
             } else if "otfsen".contains(c) {
                 let foresight = &line[current_index..];
                 for (index, digit_string) in digit_strings.iter().enumerate() {
