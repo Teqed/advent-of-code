@@ -19,4 +19,31 @@ path = "src/2024/day1/rust/mod.rs"
 name = "2024_day2"
 path = "src/2024/day2/rust/mod.rs"
 
+[[bin]]
+name = "2024_day3"
+path = "src/2024/day3/rust/mod.rs"
+
+[[bin]]
+name = "2024_day4"
+path = "src/2024/day4/rust/mod.rs"
+
+[lints.rust]
+unsafe_code = "forbid"
+
+[lints.clippy]
+enum_glob_use = "deny"
+# pedantic = "deny"
+nursery = "deny"
+unwrap_used = "deny"
+
+[profile.release]
+opt-level = 'z'
+lto = true
+codegen-units = 1
+panic = 'abort'
+strip = "symbols"
+
+[dependencies]
+regex = "1.11.1"
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
