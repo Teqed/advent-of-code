@@ -27,6 +27,10 @@ path = "src/2024/day3/rust/mod.rs"
 name = "2024_day4"
 path = "src/2024/day4/rust/mod.rs"
 
+[[bin]]
+name = "2024_day5"
+path = "src/2024/day5/rust/mod.rs"
+
 [lints.rust]
 unsafe_code = "forbid"
 
