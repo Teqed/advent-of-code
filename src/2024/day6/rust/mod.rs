@@ -38,6 +38,21 @@ fn moving_into_boundaries(x: usize, y: usize, map_state: &mut [Vec<i32>], guard:
     }
 }
 
+fn find_guard(map_state: &mut Vec<Vec<i32>>, counts: &mut i32, move_guard: fn(&mut Vec<Vec<i32>>, usize, usize) -> i32) -> bool {
+    map_state.iter().enumerate().find_map(|(y, row)| {
+        row.iter().enumerate().find_map(|(x, &tile)| {
+            if (3..=6).contains(&tile) {
+                Some((x, y))
+            } else {
+                None
+            }
+        })
+    }).map(|(x, y)| {
+        *counts += move_guard(map_state, x, y);
+        true
+    }).unwrap_or(false)
+}
+
 pub fn part_a(input: &str) -> i32 {
     let mut map = process_input(input);
 
@@ -86,18 +101,7 @@ pub fn part_a(input: &str) -> i32 {
         .filter(|&&tile| (3..=6).contains(&tile))
         .count() as i32;
 
-    let mut found_guard = true;
-    while found_guard {
-        found_guard = false;
-        for y in 0..map.len() {
-            for x in 0..map[y].len() {
-                if let 3..=6 = map[y][x] {
-                    found_guard = true;
-                    toggled_tile_count += move_guard(&mut map, x, y);
-                }
-            }
-        }
-    }
+    while find_guard(&mut map, &mut toggled_tile_count, move_guard) {};
     toggled_tile_count
 }
 
@@ -190,12 +194,7 @@ pub fn part_b(input: &str) -> i32 {
             .expect("guard should face valid direction");
         let direction_wheel_vectors: Vec<(i32, i32)> = vec![(0, -1), (1, 0), (0, 1), (-1, 0)];
 
-        if (x == 0 && guard == 6)
-            || (y == 0 && guard == 3)
-            || (x == map_state[0].len() - 1 && guard == 4)
-            || (y == map_state.len() - 1 && guard == 5)
-        {
-            map_state[y][x] = 2;
+        if moving_into_boundaries(x, y, map_state, guard) {
             return 0;
         }
 
@@ -232,19 +231,7 @@ pub fn part_b(input: &str) -> i32 {
             _ => panic!("Unexpected character in input"),
         }
     }
-
-    let mut found_guard = true;
-    while found_guard {
-        found_guard = false;
-        for y in 0..map.len() {
-            for x in 0..map[y].len() {
-                if let 3..=6 = map[y][x] {
-                    found_guard = true;
-                    possible_loops += move_guard(&mut map, x, y);
-                }
-            }
-        }
-    }
+    while find_guard(&mut map, &mut possible_loops, move_guard) {};
     possible_loops
 }
 
