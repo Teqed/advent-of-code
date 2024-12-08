@@ -46,8 +46,7 @@ coverage
 input.txt
 input_example.txt
 input_example_b.txt
-prompt_a.md
-prompt_b.md
+puzzle_*.md
 
 ## Python
 # Byte-compiled / optimized / DLL files
