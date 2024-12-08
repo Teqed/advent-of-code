@@ -50,21 +50,17 @@ fn can_create(test_val: &i64, nums: &[i64], is_part_b: bool) -> bool {
         if expr.is_empty() {
             return vec![acc];
         }
-        let first = expr[0];
-        let rest = &expr[1..];
         let mut results = Vec::new();
-
-        if acc + first - 1 > test_val {
+        let add_result = acc + expr[0];
+        if add_result - 1 > test_val {
             return results;
         }
-
-        results.extend(evaluate(rest, acc + first, is_part_b, test_val));
-        results.extend(evaluate(rest, acc * first, is_part_b, test_val));
-
+        results.extend(evaluate(&expr[1..], add_result, is_part_b, test_val));
+        results.extend(evaluate(&expr[1..], acc * expr[0], is_part_b, test_val));
         if is_part_b {
-            match format!("{}{}", acc, first).parse::<i64>() {
+            match format!("{}{}", acc, expr[0]).parse::<i64>() {
                 Ok(concat_result) if concat_result <= test_val => {
-                    results.extend(evaluate(rest, concat_result, is_part_b, test_val));
+                    results.extend(evaluate(&expr[1..], concat_result, is_part_b, test_val));
                 }
                 _ => {}
             }
@@ -72,13 +68,11 @@ fn can_create(test_val: &i64, nums: &[i64], is_part_b: bool) -> bool {
 
         results
     }
-
     if nums.is_empty() {
         return *test_val == 0;
     }
+    let options = evaluate(&nums[1..], nums[0], is_part_b, *test_val);
 
-    let first_num = nums[0];
-    let options = evaluate(&nums[1..], first_num, is_part_b, *test_val);
     options.contains(test_val)
 }
 
