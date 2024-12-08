@@ -4,23 +4,39 @@ struct TestCase {
 }
 
 pub fn part_a(input: &str) -> i64 {
-    parse_input(input).iter()
-        .filter_map(|test_case| if can_create(&test_case.test_val, &test_case.nums, false) { Some(test_case.test_val) } else { None })
+    parse_input(input)
+        .iter()
+        .filter_map(|test_case| {
+            if can_create(&test_case.test_val, &test_case.nums, false) {
+                Some(test_case.test_val)
+            } else {
+                None
+            }
+        })
         .sum()
 }
 
 pub fn part_b(input: &str) -> i64 {
-    parse_input(input).iter()
-        .filter_map(|test_case| if can_create(&test_case.test_val, &test_case.nums, true) { Some(test_case.test_val) } else { None })
+    parse_input(input)
+        .iter()
+        .filter_map(|test_case| {
+            if can_create(&test_case.test_val, &test_case.nums, true) {
+                Some(test_case.test_val)
+            } else {
+                None
+            }
+        })
         .sum()
 }
 
 fn parse_input(input: &str) -> Vec<TestCase> {
-    input.lines()
+    input
+        .lines()
         .filter_map(|line| {
             let parts: Vec<_> = line.split(": ").collect();
             parts[0].parse::<i64>().map_or(None, |test_val| {
-                let nums = parts[1].split_whitespace()
+                let nums = parts[1]
+                    .split_whitespace()
                     .filter_map(|s| s.parse::<i64>().ok())
                     .collect();
                 Some(TestCase { test_val, nums })

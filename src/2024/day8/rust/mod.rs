@@ -1,13 +1,9 @@
 use std::collections::{HashMap, HashSet};
-
-#[derive(Debug)]
 struct Antenna {
     frequency: char,
     x: usize,
     y: usize,
 }
-
-#[derive(Debug)]
 struct Map {
     width: usize,
     height: usize,
@@ -19,16 +15,23 @@ fn parse_input(input: &str) -> Map {
     let mut antennas: HashMap<char, Vec<Antenna>> = HashMap::new();
     let lines: Vec<&str> = input.lines().collect();
     let (width, height) = (lines[0].len(), lines.len());
-
     for (y, line) in lines.iter().enumerate() {
         for (x, frequency) in line.chars().enumerate() {
             if frequency.is_alphanumeric() {
-                antennas.entry(frequency).or_default().push(Antenna { frequency, x, y });
+                antennas
+                    .entry(frequency)
+                    .or_default()
+                    .push(Antenna { frequency, x, y });
             }
         }
     }
-    
-    Map { width, height, antennas, antinodes: HashSet::new() }
+
+    Map {
+        width,
+        height,
+        antennas,
+        antinodes: HashSet::new(),
+    }
 }
 
 fn find_antinodes(map: &mut Map, is_part_b: bool) {
@@ -36,21 +39,23 @@ fn find_antinodes(map: &mut Map, is_part_b: bool) {
         if let Some(antennas) = map.antennas.get(frequency) {
             for (i, antenna1) in antennas.iter().enumerate() {
                 for antenna2 in &antennas[i + 1..] {
-                    // let's do some geometry I guess
                     if is_part_b {
-                        let (dx, dy) = (antenna2.x as i32 - antenna1.x as i32, antenna2.y as i32 - antenna1.y as i32);
+                        let (dx, dy) = (
+                            antenna2.x as i32 - antenna1.x as i32,
+                            antenna2.y as i32 - antenna1.y as i32,
+                        );
                         let directions = [(antenna1, dx, dy), (antenna2, -dx, -dy)];
-
                         for (antenna, dx, dy) in &directions {
                             let (mut x, mut y) = (antenna.x as i32, antenna.y as i32);
-                            while (0..map.width as i32).contains(&x) && (0..map.height as i32).contains(&y) {
+                            while (0..map.width as i32).contains(&x)
+                                && (0..map.height as i32).contains(&y)
+                            {
                                 map.antinodes.insert((x as usize, y as usize));
                                 x += dx;
                                 y += dy;
                             }
                         }
                     }
-
                     let offsets = [
                         (
                             antenna1.x as i32 - (antenna2.x as i32 - antenna1.x as i32),
@@ -61,9 +66,9 @@ fn find_antinodes(map: &mut Map, is_part_b: bool) {
                             antenna2.y as i32 + (antenna2.y as i32 - antenna1.y as i32),
                         ),
                     ];
-
                     for &(x, y) in &offsets {
-                        if (0..map.width as i32).contains(&x) && (0..map.height as i32).contains(&y) {
+                        if (0..map.width as i32).contains(&x) && (0..map.height as i32).contains(&y)
+                        {
                             map.antinodes.insert((x as usize, y as usize));
                         }
                     }
@@ -77,7 +82,21 @@ fn print_map(map: &Map) {
     println!("Map:");
     for y in 0..map.height {
         for x in 0..map.width {
-            let symbol = map.antennas.values().flatten().find(|a| a.x == x && a.y == y).map_or_else(|| if map.antinodes.contains(&(x, y)) { '#' } else { '.' }, |antenna| antenna.frequency);
+            let symbol = map
+                .antennas
+                .values()
+                .flatten()
+                .find(|a| a.x == x && a.y == y)
+                .map_or_else(
+                    || {
+                        if map.antinodes.contains(&(x, y)) {
+                            '#'
+                        } else {
+                            '.'
+                        }
+                    },
+                    |antenna| antenna.frequency,
+                );
             print!("{}", symbol);
         }
         println!();
