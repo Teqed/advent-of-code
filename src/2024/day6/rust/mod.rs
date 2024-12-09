@@ -1,247 +1,153 @@
-fn process_input(input: &str) -> Vec<Vec<i32>> {
-    input
-        .lines()
-        .map(|line| {
-            line.chars()
-                .map(|c| match c {
-                    '.' => 0,
-                    '#' => 1,
-                    'X' => 2,
-                    '^' => 3,
-                    _ => panic!("Unexpected character in input"),
-                })
-                .collect::<Vec<i32>>()
-        })
-        .collect::<Vec<Vec<i32>>>()
+#[derive(PartialEq, Clone, Copy, Debug)]
+enum Direction {
+    North,  // '^'
+    East,   // '>'
+    South,  // 'v'
+    West,   // '<'
 }
-
-fn wheel_direction(direction: i32) -> i32 {
-    match direction {
-        3 => 4,
-        4 => 5,
-        5 => 6,
-        6 => 3,
-        _ => panic!("Unexpected direction"),
+impl Direction {
+    const fn wheel(&self) -> Self {
+        match self {
+            Self::North => Self::East,
+            Self::East => Self::South,
+            Self::South => Self::West,
+            Self::West => Self::North,
+        }
     }
 }
-
-fn moving_into_boundaries(x: usize, y: usize, map_state: &mut [Vec<i32>], guard: i32) -> bool {
-    if (x == 0 && guard == 6)
-        || (y == 0 && guard == 3)
-        || (x == map_state[0].len() - 1 && guard == 4)
-        || (y == map_state.len() - 1 && guard == 5)
-    {
-        map_state[y][x] = 2;
-        true
-    } else {
-        false
-    }
+#[derive(Clone, Copy)]
+struct Guard {
+    x: usize,
+    y: usize,
+    direction: Direction,
+    exhausted: bool,
 }
-
-fn find_guard(
-    map_state: &mut Vec<Vec<i32>>,
-    counts: &mut i32,
-    move_guard: fn(&mut Vec<Vec<i32>>, usize, usize) -> i32,
-) -> bool {
-    map_state
-        .iter()
-        .enumerate()
-        .find_map(|(y, row)| {
-            row.iter().enumerate().find_map(|(x, &tile)| {
-                if (3..=6).contains(&tile) {
-                    Some((x, y))
-                } else {
-                    None
-                }
+#[derive(PartialEq, Clone, Copy)]
+enum TileOccupant {
+    Empty,
+    Wall,
+}
+#[derive(Clone, Copy)]
+struct Tile {
+    occupied_by: TileOccupant,
+    visited: bool,
+}
+#[derive(Clone)]
+struct Map {
+    guard: Guard,
+    tiles: Vec<Vec<Tile>>,
+    check_for_possible_loops: bool,
+    possible_loops: i32,
+}
+impl Map {
+    fn new(input: &str, is_part_b: bool) -> Self {
+        let tiles = input
+            .lines()
+            .map(|line| {
+                line.chars()
+                    .map(|c| match c {
+                        '^' => Tile {
+                            occupied_by: TileOccupant::Empty,
+                            visited: true,
+                        },
+                        '#' => Tile {
+                            occupied_by: TileOccupant::Wall,
+                            visited: false,
+                        },
+                        '.' => Tile {
+                            occupied_by: TileOccupant::Empty,
+                            visited: false,
+                        },
+                        _ => panic!("Unexpected character in input"),
+                    })
+                    .collect::<Vec<Tile>>()
             })
-        })
-        .map(|(x, y)| {
-            *counts += move_guard(map_state, x, y);
-            true
-        })
-        .unwrap_or(false)
+            .collect::<Vec<Vec<Tile>>>();
+        fn find_guard(tiles: &[Vec<Tile>]) -> Guard {
+            for (y, row) in tiles.iter().enumerate() {
+                for (x, tile) in row.iter().enumerate() {
+                    if tile.visited {
+                        return Guard {
+                            x,
+                            y,
+                            direction: Direction::North,
+                            exhausted: false,
+                        };
+                    }
+                }
+            }
+            panic!("should have found a guard");
+        }
+        let guard = find_guard(&tiles);
+        Self {
+            tiles,
+            guard,
+            check_for_possible_loops: is_part_b,
+            possible_loops: 0,
+        }
+    }
+    fn move_guard(&mut self) {
+        if (self.guard.y == 0 && self.guard.direction == Direction::North) ||
+            (self.guard.x == 0 && self.guard.direction == Direction::West) ||
+            (self.guard.x == self.tiles[0].len() - 1 && self.guard.direction == Direction::East) ||
+            (self.guard.y == self.tiles.len() - 1 && self.guard.direction == Direction::South)
+        {
+            self.guard.exhausted = true;
+        } else {
+            let (new_x, new_y) = match self.guard.direction {
+                Direction::North => (self.guard.x, self.guard.y - 1),
+                Direction::East => (self.guard.x + 1, self.guard.y),
+                Direction::South => (self.guard.x, self.guard.y + 1),
+                Direction::West => (self.guard.x - 1, self.guard.y),
+            };
+            match self.tiles[new_y][new_x].occupied_by {
+                TileOccupant::Empty => {
+                    if self.check_for_possible_loops && !self.tiles[new_y][new_x].visited {
+                        self.possible_loops += self.check_guard_loop(new_x, new_y) as i32;
+                    }
+                    self.guard.x = new_x;
+                    self.guard.y = new_y;
+                    self.tiles[new_y][new_x].visited = true;
+                }
+                TileOccupant::Wall => {
+                    self.guard.direction = self.guard.direction.wheel();
+                }
+            }
+        }
+    }
+    fn visited_tile_count(&self) -> i32 {
+        self.tiles.iter().flatten().filter(|tile| tile.visited).count() as i32
+    }
+    fn exhaust_guard(&mut self) -> &Self {
+        while !self.guard.exhausted {
+            self.move_guard();
+        }
+        self
+    }
+    fn check_guard_loop(&self, testing_x: usize, testing_y: usize) -> bool {
+        let mut loop_map = self.clone();
+        loop_map.check_for_possible_loops = false;
+        loop_map.tiles[testing_y][testing_x].occupied_by = TileOccupant::Wall;
+        let mut visited_positions = Vec::new();
+        let mut possible_loop_flag = false;
+        while !loop_map.guard.exhausted && !possible_loop_flag {
+            if visited_positions.contains(&(loop_map.guard.direction, loop_map.guard.x, loop_map.guard.y)) {
+                possible_loop_flag = true;
+            } else {
+                visited_positions.push((loop_map.guard.direction, loop_map.guard.x, loop_map.guard.y));
+                loop_map.move_guard();
+            }
+        }
+        possible_loop_flag
+    }
 }
 
 pub fn part_a(input: &str) -> i32 {
-    let mut map = process_input(input);
-
-    fn move_guard(map_state: &mut Vec<Vec<i32>>, x: usize, y: usize) -> i32 {
-        let guard = map_state[y][x];
-        let direction_wheel = [3, 4, 5, 6];
-        let direction_index = direction_wheel
-            .iter()
-            .position(|&x| x == guard)
-            .expect("guard should face valid direction");
-        let direction_wheel_vectors: Vec<(i32, i32)> = vec![(0, -1), (1, 0), (0, 1), (-1, 0)];
-
-        if moving_into_boundaries(x, y, map_state, guard) {
-            return 0;
-        }
-
-        let new_y: usize = (y as i32 + direction_wheel_vectors[direction_index].1)
-            .try_into()
-            .expect("y should be valid");
-        let new_x: usize = (x as i32 + direction_wheel_vectors[direction_index].0)
-            .try_into()
-            .expect("x should be valid");
-
-        match map_state[new_y][new_x] {
-            0 => {
-                map_state[y][x] = 2;
-                map_state[new_y][new_x] = guard;
-                1
-            }
-            1 => {
-                map_state[y][x] = wheel_direction(map_state[y][x]);
-                move_guard(map_state, x, y)
-            }
-            2 => {
-                map_state[y][x] = 2;
-                map_state[new_y][new_x] = guard;
-                0
-            }
-            _ => panic!("Unexpected character in input"),
-        }
-    }
-
-    let mut toggled_tile_count = map
-        .iter()
-        .flat_map(|row| row.iter())
-        .filter(|&&tile| (3..=6).contains(&tile))
-        .count() as i32;
-
-    while find_guard(&mut map, &mut toggled_tile_count, move_guard) {}
-    toggled_tile_count
+    Map::new(input, false).exhaust_guard().visited_tile_count()
 }
 
 pub fn part_b(input: &str) -> i32 {
-    let mut possible_loops = 0;
-    let mut map = process_input(input);
-
-    fn check_guard_loop(
-        map_state: &mut Vec<Vec<i32>>,
-        x: usize,
-        y: usize,
-        origin_x: usize,
-        origin_y: usize,
-        origin_guard: i32,
-        mut recursion_depth: i32,
-    ) -> bool {
-        if recursion_depth > 10000 {
-            return true;
-        }
-        recursion_depth += 1;
-        let guard = map_state[y][x];
-        let direction_wheel = [3, 4, 5, 6];
-        let direction_index = direction_wheel
-            .iter()
-            .position(|&x| x == guard)
-            .expect("guard should face valid direction");
-        let direction_wheel_vectors: Vec<(i32, i32)> = vec![(0, -1), (1, 0), (0, 1), (-1, 0)];
-        if moving_into_boundaries(x, y, map_state, guard) {
-            return false;
-        }
-        let new_y: usize = (y as i32 + direction_wheel_vectors[direction_index].1)
-            .try_into()
-            .expect("y should be valid");
-        let new_x: usize = (x as i32 + direction_wheel_vectors[direction_index].0)
-            .try_into()
-            .expect("x should be valid");
-
-        match map_state[new_y][new_x] {
-            0 => {
-                map_state[y][x] = 2;
-                map_state[new_y][new_x] = guard;
-                check_guard_loop(
-                    map_state,
-                    new_x,
-                    new_y,
-                    origin_x,
-                    origin_y,
-                    origin_guard,
-                    recursion_depth,
-                )
-            }
-            1 => {
-                map_state[y][x] = wheel_direction(map_state[y][x]);
-                check_guard_loop(
-                    map_state,
-                    x,
-                    y,
-                    origin_x,
-                    origin_y,
-                    origin_guard,
-                    recursion_depth,
-                )
-            }
-            2 => {
-                map_state[y][x] = 2;
-                map_state[new_y][new_x] = guard;
-                if new_x == origin_x && new_y == origin_y && guard == origin_guard {
-                    return true;
-                }
-                check_guard_loop(
-                    map_state,
-                    new_x,
-                    new_y,
-                    origin_x,
-                    origin_y,
-                    origin_guard,
-                    recursion_depth,
-                )
-            }
-            _ => panic!("Unexpected character in input"),
-        }
-    }
-
-    fn move_guard(map_state: &mut Vec<Vec<i32>>, x: usize, y: usize) -> i32 {
-        let guard = map_state[y][x];
-        let direction_wheel = [3, 4, 5, 6];
-        let direction_index = direction_wheel
-            .iter()
-            .position(|&x| x == guard)
-            .expect("guard should face valid direction");
-        let direction_wheel_vectors: Vec<(i32, i32)> = vec![(0, -1), (1, 0), (0, 1), (-1, 0)];
-
-        if moving_into_boundaries(x, y, map_state, guard) {
-            return 0;
-        }
-
-        let new_y: usize = (y as i32 + direction_wheel_vectors[direction_index].1)
-            .try_into()
-            .expect("y should be valid");
-        let new_x: usize = (x as i32 + direction_wheel_vectors[direction_index].0)
-            .try_into()
-            .expect("x should be valid");
-
-        match map_state[new_y][new_x] {
-            0 => {
-                let mut map_state_clone = map_state.clone();
-                map_state_clone[new_y][new_x] = 1;
-                map_state_clone[y][x] = wheel_direction(map_state[y][x]);
-                let possible_loop = check_guard_loop(&mut map_state_clone, x, y, x, y, guard, 0);
-                map_state[y][x] = 2;
-                map_state[new_y][new_x] = guard;
-                if possible_loop {
-                    1
-                } else {
-                    0
-                }
-            }
-            1 => {
-                map_state[y][x] = wheel_direction(map_state[y][x]);
-                move_guard(map_state, x, y)
-            }
-            2 => {
-                map_state[y][x] = 2;
-                map_state[new_y][new_x] = guard;
-                0
-            }
-            _ => panic!("Unexpected character in input"),
-        }
-    }
-    while find_guard(&mut map, &mut possible_loops, move_guard) {}
-    possible_loops
+    Map::new(input, true).exhaust_guard().possible_loops
 }
 
 pub fn main() {
@@ -273,10 +179,9 @@ mod tests {
         let example_input_b = include_str!("../input_example.txt");
         assert_eq!(part_b(example_input_b), 6);
     }
-    // Rust test threads have a smaller stack size than the main thread, so this test will fail with a stack overflow.
-    // #[test]
-    // fn test_part_b() {
-    //     let input = include_str!("../input.txt");
-    //     assert_eq!(part_b(input), 1575);
-    // }
+    #[test]
+    fn test_part_b() {
+        let input = include_str!("../input.txt");
+        assert_eq!(part_b(input), 1575);
+    }
 }
