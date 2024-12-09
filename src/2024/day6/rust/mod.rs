@@ -22,14 +22,9 @@ struct Guard {
     direction: Direction,
     exhausted: bool,
 }
-#[derive(PartialEq, Clone, Copy)]
-enum TileOccupant {
-    Empty,
-    Wall,
-}
 #[derive(Clone, Copy)]
 struct Tile {
-    occupied_by: TileOccupant,
+    has_wall: bool,
     visited: bool,
 }
 #[derive(Clone)]
@@ -47,15 +42,15 @@ impl Map {
                 line.chars()
                     .map(|c| match c {
                         '^' => Tile {
-                            occupied_by: TileOccupant::Empty,
+                            has_wall: false,
                             visited: true,
                         },
                         '#' => Tile {
-                            occupied_by: TileOccupant::Wall,
+                            has_wall: true,
                             visited: false,
                         },
                         '.' => Tile {
-                            occupied_by: TileOccupant::Empty,
+                            has_wall: false,
                             visited: false,
                         },
                         _ => panic!("Unexpected character in input"),
@@ -63,22 +58,17 @@ impl Map {
                     .collect::<Vec<Tile>>()
             })
             .collect::<Vec<Vec<Tile>>>();
-        fn find_guard(tiles: &[Vec<Tile>]) -> Guard {
-            for (y, row) in tiles.iter().enumerate() {
-                for (x, tile) in row.iter().enumerate() {
-                    if tile.visited {
-                        return Guard {
-                            x,
-                            y,
-                            direction: Direction::North,
-                            exhausted: false,
-                        };
-                    }
-                }
-            }
-            panic!("should have found a guard");
-        }
-        let guard = find_guard(&tiles);
+        let guard = tiles.iter().enumerate()
+            .find_map(|(y, row)| {
+                row.iter().enumerate().find(|(_, tile)| tile.visited)
+                    .map(|(x, _)| Guard {
+                        x,
+                        y,
+                        direction: Direction::North,
+                        exhausted: false,
+                    })
+            })
+            .expect("should have found a guard");
         Self {
             tiles,
             guard,
@@ -100,8 +90,8 @@ impl Map {
                 Direction::South => (self.guard.x, self.guard.y + 1),
                 Direction::West => (self.guard.x - 1, self.guard.y),
             };
-            match self.tiles[new_y][new_x].occupied_by {
-                TileOccupant::Empty => {
+            match self.tiles[new_y][new_x].has_wall {
+                false => {
                     if self.check_for_possible_loops && !self.tiles[new_y][new_x].visited {
                         self.possible_loops += self.check_guard_loop(new_x, new_y) as i32;
                     }
@@ -109,7 +99,7 @@ impl Map {
                     self.guard.y = new_y;
                     self.tiles[new_y][new_x].visited = true;
                 }
-                TileOccupant::Wall => {
+                true => {
                     self.guard.direction = self.guard.direction.wheel();
                 }
             }
@@ -127,7 +117,7 @@ impl Map {
     fn check_guard_loop(&self, testing_x: usize, testing_y: usize) -> bool {
         let mut loop_map = self.clone();
         loop_map.check_for_possible_loops = false;
-        loop_map.tiles[testing_y][testing_x].occupied_by = TileOccupant::Wall;
+        loop_map.tiles[testing_y][testing_x].has_wall = true;
         let mut visited_positions = Vec::new();
         let mut possible_loop_flag = false;
         while !loop_map.guard.exhausted && !possible_loop_flag {
