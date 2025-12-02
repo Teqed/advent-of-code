@@ -1,7 +1,7 @@
 use super::common::{Dial, Instruction};
 
 /// Count how many times the dial passes through 0 during any rotation.
-pub fn part_b(input: &str) -> i16 {
+pub fn part_b(input: &str) -> u16 {
     let mut dial = Dial::new();
     let mut count = 0;
     for line in input.lines().filter(|l| !l.is_empty()) {

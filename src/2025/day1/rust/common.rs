@@ -7,7 +7,7 @@ pub enum Direction {
 /// An instruction to rotate the dial.
 pub struct Instruction {
     pub direction: Direction, // L or R.
-    pub distance: i16,        // How many clicks to rotate.
+    pub distance: u16,        // How many clicks to rotate.
 }
 impl Instruction {
     /// Parse an instruction from a line of input (e.g. "L68" or "R48").
@@ -27,7 +27,7 @@ impl Instruction {
 
 /// A safe dial with positions 0-99 that wraps around.
 pub struct Dial {
-    pub position: i16, // Current position on the dial.
+    pub position: u16, // Current position on the dial.
 }
 impl Dial {
     /// Create a new dial starting at position 50.
@@ -35,11 +35,14 @@ impl Dial {
         Self { position: 50 }
     }
 
-    /// Rotate the dial according to an instruction, wrapping around at 0/100.
+    /// Rotate the dial according to an instruction, wrapping around at 0/99 using modulo arithmetic.
+    /// 
+    /// The remainder of the modulo operation is effectively, "what remains after subtracting 100 as many times as possible?"
+    /// This allows us to account for full rotations around the dial and determining what position we should have landed on.
     pub const fn rotate(&mut self, instruction: &Instruction) {
         self.position = match instruction.direction {
-            Direction::Left => (self.position - instruction.distance).rem_euclid(100), // Wrap around at 0.
-            Direction::Right => (self.position + instruction.distance).rem_euclid(100), // Wrap around at 100.
+            Direction::Left => (self.position + 100 - instruction.distance % 100) % 100, // For Left, add 100 before subtracting to avoid negative values.
+            Direction::Right => (self.position + instruction.distance) % 100, // For Right, simply wrap around at 100.
         };
     }
 
@@ -48,21 +51,15 @@ impl Dial {
         self.position == 0
     }
 
-    /// Count how many times the dial passes through 0 during a rotation.
-    pub const fn count_zero_crossings(&self, instruction: &Instruction) -> i16 {
+    /// Count how many times the dial passes through 0 during a rotation using division.
+    pub const fn count_zero_crossings(&self, instruction: &Instruction) -> u16 {
         match instruction.direction {
             Direction::Left => {
-                let mut first_crossing = self.position;
-                if first_crossing == 0 {
-                    first_crossing = 100; // If starting at 0, first crossing Left is after full rotation.
-                }
-                if instruction.distance < first_crossing {
-                    0 // Did not reach 0 during this rotation.
-                } else {
-                    (instruction.distance - first_crossing) / 100 + 1 // Returns number of Left crossings.
-                }
+                let first_crossing = if self.position == 0 { 100 } else { self.position };
+                if instruction.distance < first_crossing { 0 } // Distance too short to reach first crossing.
+                else { (instruction.distance - first_crossing) / 100 + 1 } // First crossing + additional full rotations.
             }
-            Direction::Right => (self.position + instruction.distance) / 100, // Returns number of Right crossings.
+            Direction::Right => (self.position + instruction.distance) / 100, // Count complete 100-step cycles.
         }
     }
 }
