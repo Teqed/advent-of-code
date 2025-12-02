@@ -197,3 +197,6 @@ Cargo.lock
 
 # MacOS-specific
 .DS_Store
+
+# Nix
+.direnv/
