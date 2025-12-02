@@ -47,6 +47,7 @@ input.txt
 input_example.txt
 input_example_b.txt
 puzzle_*.md
+day0/
 
 ## Python
 # Byte-compiled / optimized / DLL files
